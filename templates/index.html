@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard — Unified ML Portal{% endblock %}
+
+{% block content %}
+<section class="hero-section">
+    <div class="hero-badge">⚡ 5 AI Models Live</div>
+    <h1 class="hero-title">
+        Your Unified<br>
+        <span class="gradient-text">AI Prediction Hub</span>
+    </h1>
+    <p class="hero-subtitle">
+        Interact with five production-ready machine learning models — from customer churn to audio language recognition — powered by Scikit-Learn, XGBoost & TensorFlow.
+    </p>
+
+    <div class="hero-stats">
+        <div class="stat"><span class="stat-num">5</span><span class="stat-label">AI Models</span></div>
+        <div class="stat"><span class="stat-num">36</span><span class="stat-label">Fruit Classes</span></div>
+        <div class="stat"><span class="stat-num">10</span><span class="stat-label">Languages</span></div>
+        <div class="stat"><span class="stat-num">3</span><span class="stat-label">Model Types</span></div>
+    </div>
+</section>
+
+<div class="section-label">
+    <h2>Choose a Model</h2>
+    <div class="section-line"></div>
+</div>
+
+<div class="cards-grid">
+    <a href="/ecommerce" class="glass-card" data-accent="blue">
+        <div class="card-icon gradient-blue">🛒</div>
+        <div class="card-content">
+            <h3>E-commerce Churn</h3>
+            <p>Predict customer retention using Gradient Boosting — based on shopping behaviour, satisfaction scores, and demographics.</p>
+            <span class="badge">Gradient Boosting · Tabular</span>
+        </div>
+        <div class="card-arrow">Try it out</div>
+    </a>
+
+    <a href="/loan" class="glass-card" data-accent="green">
+        <div class="card-icon gradient-green">🏦</div>
+        <div class="card-content">
+            <h3>Loan Approval</h3>
+            <p>Determine loan eligibility using XGBoost on financial history, credit scores, and applicant demographics.</p>
+            <span class="badge">XGBoost · Tabular</span>
+        </div>
+        <div class="card-arrow">Try it out</div>
+    </a>
+
+    <a href="/facemask" class="glass-card" data-accent="purple">
+        <div class="card-icon gradient-purple">😷</div>
+        <div class="card-content">
+            <h3>Face Mask Detection</h3>
+            <p>Upload a face image to classify mask compliance — With Mask, Without Mask, or Worn Incorrectly.</p>
+            <span class="badge">MobileNetV2 · Vision</span>
+        </div>
+        <div class="card-arrow">Try it out</div>
+    </a>
+
+    <a href="/fruitveg" class="glass-card" data-accent="orange">
+        <div class="card-icon gradient-orange">🍎</div>
+        <div class="card-content">
+            <h3>Fruit & Vegetable AI</h3>
+            <p>Identify 36 different types of fruits and vegetables from any photo using a deep CNN classifier.</p>
+            <span class="badge">MobileNetV2 · Vision</span>
+        </div>
+        <div class="card-arrow">Try it out</div>
+    </a>
+
+    <a href="/audio" class="glass-card" data-accent="pink">
+        <div class="card-icon gradient-pink">🎙️</div>
+        <div class="card-content">
+            <h3>Language Audio Classifier</h3>
+            <p>Upload a voice clip to detect the Indian language spoken — using Mel-Spectrogram CNNs across 10 languages.</p>
+            <span class="badge">MobileNetV2 · Audio</span>
+        </div>
+        <div class="card-arrow">Try it out</div>
+    </a>
+</div>
+{% endblock %}

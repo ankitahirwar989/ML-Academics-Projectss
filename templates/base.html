@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Unified ML Portal{% endblock %}</title>
+    <meta name="description" content="A unified AI portal featuring 5 machine learning models — E-commerce churn, loan approval, face mask detection, fruit classification, and audio language recognition.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <!-- Animated mesh background -->
+    <div class="mesh-bg">
+        <div class="mesh-orb"></div>
+    </div>
+
+    <nav class="navbar" id="navbar">
+        <a href="/" class="logo">
+            <div class="logo-icon">⚡</div>
+            <span class="logo-text">ML Portal</span>
+        </a>
+        <div class="nav-links">
+            <a href="/"          id="nav-home">Home</a>
+            <a href="/ecommerce" id="nav-ecom">E-Commerce</a>
+            <a href="/loan"      id="nav-loan">Loan</a>
+            <a href="/facemask"  id="nav-face">Face Mask</a>
+            <a href="/fruitveg"  id="nav-fruit">Fruits & Veg</a>
+            <a href="/audio"     id="nav-audio">Language Audio</a>
+        </div>
+    </nav>
+
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+
+    <script>
+        // Navbar scroll effect
+        const navbar = document.getElementById('navbar');
+        window.addEventListener('scroll', () => {
+            navbar.classList.toggle('scrolled', window.scrollY > 20);
+        });
+
+        // Set active nav link
+        const path = window.location.pathname;
+        const map = { '/': 'nav-home', '/ecommerce': 'nav-ecom', '/loan': 'nav-loan',
+                      '/facemask': 'nav-face', '/fruitveg': 'nav-fruit', '/audio': 'nav-audio' };
+        const activeId = map[path];
+        if (activeId) document.getElementById(activeId)?.classList.add('active');
+    </script>
+</body>
+</html>

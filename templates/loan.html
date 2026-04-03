@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+
+{% block title %}Loan Approval Predictor{% endblock %}
+
+{% block content %}
+<style>
+.slider-wrapper { display: flex; flex-direction: column; gap: 6px; }
+.slider-row { display: flex; align-items: center; gap: 12px; }
+.slider-row input[type=range] {
+    flex: 1;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 6px;
+    border-radius: 4px;
+    background: linear-gradient(to right, var(--accent, #6c63ff) 0%, var(--accent, #6c63ff) 50%, #3a3a5c 50%);
+    outline: none;
+    cursor: pointer;
+}
+.slider-row input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: var(--accent, #6c63ff);
+    box-shadow: 0 0 6px rgba(108,99,255,.6);
+    cursor: pointer;
+    transition: transform .15s;
+}
+.slider-row input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+.slider-value {
+    min-width: 72px;
+    text-align: center;
+    background: rgba(108,99,255,.15);
+    border: 1px solid rgba(108,99,255,.35);
+    border-radius: 8px;
+    padding: 4px 8px;
+    font-weight: 600;
+    font-size: .9rem;
+    color: var(--accent, #6c63ff);
+}
+</style>
+
+<div class="form-container fade-in-up">
+    <div class="form-header">
+        <div class="card-icon gradient-green" style="margin: 0 auto 1.5rem auto;">
+            <i class="fas fa-money-check-alt">🏦</i>
+        </div>
+        <h2>Loan Approval Predictor</h2>
+        <p style="color: var(--text-muted);">Input applicant details to predict loan approval.</p>
+    </div>
+
+    <form id="loan-form">
+        <div class="form-grid" id="form-inputs">
+            <p style="color: var(--text-muted); text-align: center; grid-column: 1 / -1;">
+                <i class="fas fa-spinner fa-spin"></i> Loading input fields from model...
+            </p>
+        </div>
+        <button type="submit" class="btn-primary" id="submit-btn" style="display: none;">
+            <i class="fas fa-check-circle"></i> Check Eligibility
+        </button>
+    </form>
+
+    <div class="result-card" id="result-box">
+        <div class="result-title">System Decision</div>
+        <div class="result-value" id="result-val">--</div>
+        <p style="color: var(--text-muted);" id="result-conf">Confidence Metric: --%</p>
+    </div>
+</div>
+
+<script>
+    const CATEGORY_VALUES = {
+        person_gender: ['male', 'female'],
+        person_education: ['High School', 'Associate', 'Bachelor', 'Master', 'Doctorate'],
+        person_home_ownership: ['RENT', 'OWN', 'MORTGAGE', 'OTHER'],
+        loan_intent: ['EDUCATION', 'MEDICAL', 'VENTURE', 'PERSONAL', 'HOMEIMPROVEMENT', 'DEBTCONSOLIDATION'],
+        previous_loan_defaults_on_file: ['Yes', 'No']
+    };
+
+    const CATEGORY_LABELS = {
+        person_gender: { 'male': 'Male', 'female': 'Female' },
+        person_education: {
+            'High School': 'High School', 'Associate': "Associate's Degree",
+            'Bachelor': "Bachelor's Degree", 'Master': "Master's Degree", 'Doctorate': 'Doctorate / PhD'
+        },
+        person_home_ownership: { 'RENT': '🏠 Rent', 'OWN': '🔑 Own', 'MORTGAGE': '🏦 Mortgage', 'OTHER': '📋 Other' },
+        loan_intent: {
+            'EDUCATION': '🎓 Education', 'MEDICAL': '🏥 Medical', 'VENTURE': '💼 Business Venture',
+            'PERSONAL': '👤 Personal', 'HOMEIMPROVEMENT': '🏗️ Home Improvement', 'DEBTCONSOLIDATION': '💳 Debt Consolidation'
+        },
+        previous_loan_defaults_on_file: { 'Yes': '⚠️ Yes — Has Defaults', 'No': '✅ No — Clean Record' }
+    };
+
+    const FIELD_LABELS = {
+        person_age: 'Age (years)',
+        person_income: 'Annual Income (₹)',
+        person_emp_exp: 'Employment Experience (years)',
+        loan_amnt: 'Loan Amount (₹)',
+        loan_int_rate: 'Interest Rate (%)',
+        loan_percent_income: 'Loan-to-Income Ratio',
+        cb_person_cred_hist_length: 'Credit History Length (years)',
+        credit_score: 'Credit Score',
+        person_gender: 'Gender',
+        person_education: 'Education Level',
+        person_home_ownership: 'Home Ownership',
+        loan_intent: 'Loan Purpose',
+        previous_loan_defaults_on_file: 'Previous Loan Defaults'
+    };
+
+    // Slider config: [min, max, step, default]
+    const SLIDER_CONFIG = {
+        person_age:                  [18,   80,    1,    30],
+        person_income:               [0,    500000, 1000, 75000],
+        person_emp_exp:              [0,    40,    1,    5],
+        loan_amnt:                   [500,  100000, 500,  10000],
+        loan_int_rate:               [1,    30,    0.1,  10.5],
+        loan_percent_income:         [0,    1,     0.01, 0.15],
+        cb_person_cred_hist_length:  [0,    30,    1,    5],
+        credit_score:                [300,  850,   10,   680]
+    };
+
+    const FEATURES = [
+        'person_age','person_income','person_emp_exp','loan_amnt',
+        'loan_int_rate','loan_percent_income','cb_person_cred_hist_length','credit_score',
+        'person_gender','person_education','person_home_ownership','loan_intent',
+        'previous_loan_defaults_on_file'
+    ];
+    const CATEGORICALS = ['person_gender','person_education','person_home_ownership',
+        'loan_intent','previous_loan_defaults_on_file'];
+
+    const formInputs = document.getElementById('form-inputs');
+    formInputs.innerHTML = '';
+
+    function updateSliderBg(slider) {
+        const pct = ((slider.value - slider.min) / (slider.max - slider.min)) * 100;
+        slider.style.background = `linear-gradient(to right, var(--accent,#6c63ff) ${pct}%, #3a3a5c ${pct}%)`;
+    }
+
+    FEATURES.forEach(feat => {
+        const isCategorical = CATEGORICALS.includes(feat);
+        const label = FIELD_LABELS[feat] || feat.replace(/_/g,' ').replace(/\b\w/g, l => l.toUpperCase());
+        const wrapper = document.createElement('div');
+        wrapper.className = 'input-group';
+
+        const lbl = document.createElement('label');
+        lbl.setAttribute('for', feat);
+        lbl.textContent = label;
+        wrapper.appendChild(lbl);
+
+        if (isCategorical) {
+            const sel = document.createElement('select');
+            sel.name = feat; sel.id = feat;
+            sel.className = 'input-control'; sel.required = true;
+            const vals = CATEGORY_VALUES[feat] || [];
+            const labelMap = CATEGORY_LABELS[feat] || {};
+            vals.forEach(v => {
+                const opt = document.createElement('option');
+                opt.value = v; opt.textContent = labelMap[v] || v;
+                sel.appendChild(opt);
+            });
+            wrapper.appendChild(sel);
+        } else {
+            const [mn, mx, st, def] = SLIDER_CONFIG[feat];
+            const sliderWrap = document.createElement('div');
+            sliderWrap.className = 'slider-wrapper';
+
+            const row = document.createElement('div');
+            row.className = 'slider-row';
+
+            const slider = document.createElement('input');
+            slider.type = 'range';
+            slider.name = feat; slider.id = feat;
+            slider.min = mn; slider.max = mx; slider.step = st; slider.value = def;
+            slider.required = true;
+
+            const valBadge = document.createElement('span');
+            valBadge.className = 'slider-value';
+            valBadge.id = feat + '_val';
+            valBadge.textContent = def;
+
+            updateSliderBg(slider);
+            slider.addEventListener('input', () => {
+                valBadge.textContent = slider.value;
+                updateSliderBg(slider);
+            });
+
+            row.appendChild(slider);
+            row.appendChild(valBadge);
+            sliderWrap.appendChild(row);
+            wrapper.appendChild(sliderWrap);
+        }
+
+        formInputs.appendChild(wrapper);
+    });
+    document.getElementById('submit-btn').style.display = 'block';
+
+    document.getElementById('loan-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('submit-btn');
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Evaluating...';
+        btn.disabled = true;
+
+        const formData = new FormData(e.target);
+        const data = Object.fromEntries(formData.entries());
+
+        try {
+            const response = await fetch('/api/loan/predict', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const result = await response.json();
+            const resultBox = document.getElementById('result-box');
+            const resultVal = document.getElementById('result-val');
+            const resultConf = document.getElementById('result-conf');
+            resultBox.classList.add('active');
+
+            // Check for server-side error first
+            if (result.error) {
+                resultVal.textContent = '⚠️ Error';
+                resultVal.className = 'result-value';
+                resultVal.style.color = '#f59e0b';
+                resultConf.textContent = `Error: ${result.error}`;
+            } else if (result.prediction === 1) {
+                resultVal.textContent = '✅ APPROVED';
+                resultVal.className = 'result-value result-success';
+                resultConf.textContent = `Confidence: ${(result.probability * 100).toFixed(2)}%`;
+            } else {
+                resultVal.textContent = '❌ REJECTED';
+                resultVal.className = 'result-value result-danger';
+                resultConf.textContent = `Confidence: ${((1 - result.probability) * 100).toFixed(2)}%`;
+            }
+        } catch (error) {
+            alert('Network error making prediction. Is the server running?');
+        } finally {
+            btn.innerHTML = '<i class="fas fa-check-circle"></i> Check Eligibility';
+            btn.disabled = false;
+        }
+    });
+</script>
+{% endblock %}

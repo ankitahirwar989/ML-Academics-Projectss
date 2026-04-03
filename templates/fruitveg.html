@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}Fruit & Vegetable Classifier{% endblock %}
+
+{% block content %}
+<div class="form-container fade-in-up" style="max-width: 600px;">
+    <div class="form-header">
+        <div class="card-icon gradient-orange" style="margin: 0 auto 1.5rem auto;">
+            <i class="fas fa-apple-alt">🍎</i>
+        </div>
+        <h2>Produce Classifier</h2>
+        <p style="color: var(--text-muted);">Upload a picture of a fruit or vegetable to classify it.</p>
+    </div>
+
+    <form id="upload-form">
+        <div class="upload-zone" id="drop-zone">
+            <input type="file" id="file-input" name="image" class="file-input" accept="image/jpeg, image/png, image/webp" required>
+            <div class="upload-icon"><i class="fas fa-camera"></i></div>
+            <div class="upload-text">Select Image</div>
+            <div class="upload-subtext">AI handles 36 common varieties</div>
+        </div>
+
+        <div class="preview-container" id="preview-box">
+            <img id="image-preview" src="#" alt="Image Preview">
+        </div>
+
+        <button type="submit" class="btn-primary" id="submit-btn" style="display:none; margin-top:2rem;">
+            <i class="fas fa-magic"></i> Classify Object
+        </button>
+    </form>
+
+    <div class="result-card" id="result-box">
+        <div class="result-title">Detected Object</div>
+        <div class="result-value" id="result-val" style="color: var(--accent-orange);">--</div>
+        
+        <div class="prob-bars" id="prob-bars"></div>
+    </div>
+</div>
+
+<script>
+    const fileInput = document.getElementById('file-input');
+    const imagePreview = document.getElementById('image-preview');
+    const previewBox = document.getElementById('preview-box');
+    const submitBtn = document.getElementById('submit-btn');
+
+    fileInput.addEventListener('change', function() {
+        if (this.files && this.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                imagePreview.src = e.target.result;
+                previewBox.style.display = 'block';
+                submitBtn.style.display = 'block';
+            }
+            reader.readAsDataURL(this.files[0]);
+        }
+    });
+
+    document.getElementById('upload-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Identifying...';
+        submitBtn.disabled = true;
+
+        const formData = new FormData(e.target);
+        try {
+            const response = await fetch('/api/fruitveg/predict', { method: 'POST', body: formData });
+            const result = await response.json();
+            
+            const resultBox = document.getElementById('result-box');
+            const resultVal = document.getElementById('result-val');
+            const probBars = document.getElementById('prob-bars');
+            
+            resultBox.classList.add('active');
+            let name = result.class.toUpperCase();
+            resultVal.textContent = name;
+            
+            probBars.innerHTML = '<p style="color:var(--text-muted);margin-bottom:10px;font-size:0.9rem;">Top 5 Predictions</p>';
+            
+            const colors = ['var(--accent-green)', 'var(--accent-blue)', 'var(--accent-orange)', 'var(--accent-purple)', 'var(--accent-pink)'];
+            
+            result.top5.forEach((prob, index) => {
+                probBars.innerHTML += `
+                    <div class="prob-bar-container">
+                        <div class="prob-label" style="text-transform: capitalize;">${prob.class_name}</div>
+                        <div class="prob-track">
+                            <div class="prob-fill" style="width: ${prob.prob}%; background: ${colors[index]}"></div>
+                        </div>
+                        <div class="prob-pct">${prob.prob.toFixed(1)}%</div>
+                    </div>
+                `;
+            });
+            
+        } catch (error) {
+            alert('Error classifying food.');
+        } finally {
+            submitBtn.innerHTML = '<i class="fas fa-magic"></i> Classify Object';
+            submitBtn.disabled = false;
+        }
+    });
+</script>
+{% endblock %}

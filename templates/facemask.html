@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+
+{% block title %}Face Mask Detector (Live){% endblock %}
+
+{% block content %}
+<div class="form-container fade-in-up" style="max-width: 600px;">
+    <div class="form-header">
+        <div class="card-icon gradient-purple" style="margin: 0 auto 1.5rem auto;">
+            <i class="fas fa-head-side-mask">😷</i>
+        </div>
+        <h2>Live Face Mask Detector</h2>
+        <p style="color: var(--text-muted);">Uses your webcam to classify mask compliance in real-time.</p>
+    </div>
+
+    <div id="camera-container" style="position: relative; margin-bottom: 1.5rem;">
+        <video id="webcam" autoplay playsinline style="width: 100%; border-radius: 8px; background: #000; min-height: 300px;"></video>
+        <canvas id="canvas" style="display:none;"></canvas>
+        <div id="cam-status" style="position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.6); color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; display: none;">
+            <i class="fas fa-circle text-danger blink"></i> LIVE
+        </div>
+    </div>
+
+    <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+        <button id="start-cam-btn" class="btn-primary" style="flex:1;">
+            <i class="fas fa-video"></i> Start Camera
+        </button>
+        <button id="stop-cam-btn" class="btn-danger" style="flex:1; display:none; background: #ef4444; color: white; border: none; border-radius: 8px; font-weight: 500; font-size: 1rem; cursor: pointer; transition: all 0.3s ease;">
+            <i class="fas fa-video-slash"></i> Stop Camera
+        </button>
+    </div>
+
+    <div class="result-card" id="result-box" style="margin-top: 1.5rem;">
+        <div class="result-title">Live Analysis Result</div>
+        <div class="result-value" id="result-val">--</div>
+        
+        <div class="prob-bars" id="prob-bars"></div>
+    </div>
+</div>
+
+<style>
+.blink {
+    animation: blinker 1.5s linear infinite;
+}
+@keyframes blinker {
+    50% { opacity: 0; }
+}
+.text-danger {
+    color: #ef4444;
+}
+.btn-danger:hover {
+    background: #dc2626;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+}
+</style>
+
+<script>
+    const webcam = document.getElementById('webcam');
+    const canvas = document.getElementById('canvas');
+    const startBtn = document.getElementById('start-cam-btn');
+    const stopBtn = document.getElementById('stop-cam-btn');
+    const resultBox = document.getElementById('result-box');
+    const resultVal = document.getElementById('result-val');
+    const probBars = document.getElementById('prob-bars');
+    const camStatus = document.getElementById('cam-status');
+
+    let stream = null;
+    let intervalId = null;
+    let isAnalyzing = false;
+
+    startBtn.addEventListener('click', async () => {
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+            webcam.srcObject = stream;
+            startBtn.style.display = 'none';
+            stopBtn.style.display = 'block';
+            camStatus.style.display = 'block';
+            resultBox.classList.add('active');
+            resultVal.className = 'result-value';
+            resultVal.textContent = 'Waiting for frame...';
+            probBars.innerHTML = '';
+            
+            // Start analyzing frames
+            intervalId = setInterval(analyzeFrame, 800);
+        } catch (err) {
+            alert("Camera access denied or error: " + err.message);
+        }
+    });
+
+    stopBtn.addEventListener('click', () => {
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+        }
+        webcam.srcObject = null;
+        clearInterval(intervalId);
+        startBtn.style.display = 'block';
+        stopBtn.style.display = 'none';
+        camStatus.style.display = 'none';
+        resultVal.textContent = '--';
+        probBars.innerHTML = '';
+        resultBox.classList.remove('active');
+    });
+
+    async function analyzeFrame() {
+        if (!stream || isAnalyzing) return;
+        isAnalyzing = true;
+        
+        // Wait until video has enough data
+        if (webcam.videoWidth === 0 || webcam.videoHeight === 0) {
+            isAnalyzing = false;
+            return;
+        }
+
+        canvas.width = webcam.videoWidth;
+        canvas.height = webcam.videoHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(webcam, 0, 0, canvas.width, canvas.height);
+        
+        canvas.toBlob(async (blob) => {
+            if (!blob) {
+                isAnalyzing = false;
+                return;
+            }
+            const formData = new FormData();
+            formData.append('image', blob, 'frame.jpg');
+            
+            try {
+                const response = await fetch('/api/facemask/predict', { method: 'POST', body: formData });
+                const result = await response.json();
+                
+                if (result.error) {
+                    console.error(result.error);
+                    isAnalyzing = false;
+                    return;
+                }
+                
+                let colorClass = '';
+                let displayClass = '';
+                
+                if (result.class === 'with_mask') { colorClass = 'result-success'; displayClass = 'WITH MASK'; }
+                else if (result.class === 'without_mask') { colorClass = 'result-danger'; displayClass = 'NO MASK'; }
+                else { colorClass = 'result-warning'; displayClass = 'INCORRECT MASK'; }
+                
+                resultVal.className = `result-value ${colorClass}`;
+                resultVal.textContent = displayClass;
+                
+                probBars.innerHTML = '';
+                const labelsMap = {
+                    'mask_weared_incorrect': ['Incorrect Mask', 'var(--accent-orange)'],
+                    'with_mask': ['With Mask', 'var(--accent-green)'],
+                    'without_mask': ['No Mask', '#ef4444']
+                };
+                
+                result.probabilities.forEach(prob => {
+                    const labelInfo = labelsMap[prob.class_name];
+                    probBars.innerHTML += `
+                        <div class="prob-bar-container">
+                            <div class="prob-label">${labelInfo[0]}</div>
+                            <div class="prob-track">
+                                <div class="prob-fill" style="width: ${prob.prob}%; background: ${prob.class_name === result.class ? labelInfo[1] : 'rgba(255,255,255,0.2)'}"></div>
+                            </div>
+                            <div class="prob-pct">${prob.prob.toFixed(1)}%</div>
+                        </div>
+                    `;
+                });
+                
+            } catch (error) {
+                console.error('Error classifying frame:', error);
+            } finally {
+                isAnalyzing = false;
+            }
+        }, 'image/jpeg');
+    }
+    
+    // Cleanup when leaving page
+    window.addEventListener('beforeunload', () => {
+        if (stream) stream.getTracks().forEach(track => track.stop());
+    });
+</script>
+{% endblock %}

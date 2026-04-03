@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+
+{% block title %}E-commerce Churn Predictor{% endblock %}
+
+{% block content %}
+<style>
+.slider-wrapper { display: flex; flex-direction: column; gap: 6px; }
+.slider-row { display: flex; align-items: center; gap: 12px; }
+.slider-row input[type=range] {
+    flex: 1;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 6px;
+    border-radius: 4px;
+    background: linear-gradient(to right, var(--accent, #6c63ff) 50%, #3a3a5c 50%);
+    outline: none;
+    cursor: pointer;
+}
+.slider-row input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: var(--accent, #6c63ff);
+    box-shadow: 0 0 6px rgba(108,99,255,.6);
+    cursor: pointer;
+    transition: transform .15s;
+}
+.slider-row input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+.slider-value {
+    min-width: 72px;
+    text-align: center;
+    background: rgba(108,99,255,.15);
+    border: 1px solid rgba(108,99,255,.35);
+    border-radius: 8px;
+    padding: 4px 8px;
+    font-weight: 600;
+    font-size: .9rem;
+    color: var(--accent, #6c63ff);
+}
+</style>
+
+<div class="form-container fade-in-up">
+    <div class="form-header">
+        <div class="card-icon gradient-blue" style="margin: 0 auto 1.5rem auto;">
+            <i class="fas fa-shopping-cart">🛒</i>
+        </div>
+        <h2>Customer Churn Predictor</h2>
+        <p style="color: var(--text-muted);">Fill in the customer behavioral details below to predict the probability of churn.</p>
+    </div>
+
+    <form id="ecommerce-form">
+        <div class="form-grid" id="form-inputs">
+            <p style="color: var(--text-muted); text-align: center; grid-column: 1 / -1;">
+                <i class="fas fa-spinner fa-spin"></i> Loading input fields from model...
+            </p>
+        </div>
+        <button type="submit" class="btn-primary" id="submit-btn" style="display: none;">
+            <i class="fas fa-magic"></i> Predict Churn
+        </button>
+    </form>
+
+    <div class="result-card" id="result-box">
+        <div class="result-title">Prediction Result</div>
+        <div class="result-value" id="result-val">--</div>
+        <p style="color: var(--text-muted);" id="result-conf">Probability: --%</p>
+    </div>
+</div>
+
+<script>
+    // Slider config: [min, max, step, default]
+    const SLIDER_CONFIG = {
+        Tenure:                    [0,   60,   1,    12],
+        CityTier:                  [1,   3,    1,    2],
+        WarehouseToHome:           [1,   100,  1,    15],
+        HourSpendOnApp:            [0,   10,   0.5,  2.5],
+        NumberOfDeviceRegistered:  [1,   10,   1,    3],
+        SatisfactionScore:         [1,   5,    1,    3],
+        NumberOfAddress:           [1,   20,   1,    2],
+        Complain:                  [0,   1,    1,    0],
+        OrderAmountHikeFromlastYear:[0,  50,   1,    15],
+        CouponUsed:                [0,   20,   1,    2],
+        OrderCount:                [0,   20,   1,    4],
+        DaySinceLastOrder:         [0,   60,   1,    5],
+        CashbackAmount:            [0,   500,  10,   150]
+    };
+
+    const FEATURES = [
+        { name: 'Tenure',                    label: 'Tenure (months)',              type: 'range' },
+        { name: 'CityTier',                  label: 'City Tier (1–3)',              type: 'range' },
+        { name: 'WarehouseToHome',           label: 'Warehouse to Home (km)',       type: 'range' },
+        { name: 'HourSpendOnApp',            label: 'Hours Spent on App (daily)',   type: 'range' },
+        { name: 'NumberOfDeviceRegistered',  label: 'Devices Registered',           type: 'range' },
+        { name: 'SatisfactionScore',         label: 'Satisfaction Score (1–5)',     type: 'range' },
+        { name: 'NumberOfAddress',           label: 'Number of Saved Addresses',   type: 'range' },
+        { name: 'Complain',                  label: 'Has Complained? (0=No 1=Yes)', type: 'range' },
+        { name: 'OrderAmountHikeFromlastYear', label: 'Order Amount Hike (%)',      type: 'range' },
+        { name: 'CouponUsed',               label: 'Coupons Used (last month)',    type: 'range' },
+        { name: 'OrderCount',               label: 'Orders Placed (last month)',   type: 'range' },
+        { name: 'DaySinceLastOrder',        label: 'Days Since Last Order',        type: 'range' },
+        { name: 'CashbackAmount',           label: 'Cashback Amount (₹)',          type: 'range' },
+        { name: 'PreferredLoginDevice',     label: 'Preferred Login Device',       type: 'select',
+          options: [['Mobile Phone','📱 Mobile Phone'],['Computer','💻 Computer'],['Phone','📞 Phone']] },
+        { name: 'PreferredPaymentMode',     label: 'Preferred Payment Mode',       type: 'select',
+          options: [['Debit Card','💳 Debit Card'],['UPI','📲 UPI'],['Credit Card','🏦 Credit Card'],['Cash on Delivery','💵 Cash on Delivery']] },
+        { name: 'Gender',                   label: 'Gender',                       type: 'select',
+          options: [['Male','👨 Male'],['Female','👩 Female']] },
+        { name: 'PreferedOrderCat',         label: 'Preferred Order Category',     type: 'select',
+          options: [['Laptop','💻 Laptop & Electronics'],['Mobile','📱 Mobile'],['Fashion','👗 Fashion'],['Grocery','🛒 Grocery']] },
+        { name: 'MaritalStatus',            label: 'Marital Status',               type: 'select',
+          options: [['Single','💍 Single'],['Married','👫 Married'],['Divorced','📝 Divorced']] },
+    ];
+
+    const formInputs = document.getElementById('form-inputs');
+    formInputs.innerHTML = '';
+
+    function updateSliderBg(slider) {
+        const pct = ((slider.value - slider.min) / (slider.max - slider.min)) * 100;
+        slider.style.background = `linear-gradient(to right, var(--accent,#6c63ff) ${pct}%, #3a3a5c ${pct}%)`;
+    }
+
+    FEATURES.forEach(feat => {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'input-group';
+
+        const lbl = document.createElement('label');
+        lbl.setAttribute('for', feat.name);
+        lbl.textContent = feat.label;
+        wrapper.appendChild(lbl);
+
+        if (feat.type === 'select') {
+            const sel = document.createElement('select');
+            sel.name = feat.name; sel.id = feat.name;
+            sel.className = 'input-control'; sel.required = true;
+            feat.options.forEach(([val, display]) => {
+                const opt = document.createElement('option');
+                opt.value = val; opt.textContent = display;
+                sel.appendChild(opt);
+            });
+            wrapper.appendChild(sel);
+        } else {
+            const [mn, mx, st, def] = SLIDER_CONFIG[feat.name];
+            const sliderWrap = document.createElement('div');
+            sliderWrap.className = 'slider-wrapper';
+
+            const row = document.createElement('div');
+            row.className = 'slider-row';
+
+            const slider = document.createElement('input');
+            slider.type = 'range';
+            slider.name = feat.name; slider.id = feat.name;
+            slider.min = mn; slider.max = mx; slider.step = st; slider.value = def;
+            slider.required = true;
+
+            const valBadge = document.createElement('span');
+            valBadge.className = 'slider-value';
+            valBadge.id = feat.name + '_val';
+            valBadge.textContent = def;
+
+            updateSliderBg(slider);
+            slider.addEventListener('input', () => {
+                valBadge.textContent = slider.value;
+                updateSliderBg(slider);
+            });
+
+            row.appendChild(slider);
+            row.appendChild(valBadge);
+            sliderWrap.appendChild(row);
+            wrapper.appendChild(sliderWrap);
+        }
+
+        formInputs.appendChild(wrapper);
+    });
+    document.getElementById('submit-btn').style.display = 'block';
+
+    document.getElementById('ecommerce-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('submit-btn');
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        btn.disabled = true;
+
+        const formData = new FormData(e.target);
+        const data = Object.fromEntries(formData.entries());
+
+        try {
+            const response = await fetch('/api/ecommerce/predict', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const result = await response.json();
+            const resultBox = document.getElementById('result-box');
+            const resultVal = document.getElementById('result-val');
+            const resultConf = document.getElementById('result-conf');
+            resultBox.classList.add('active');
+            if (result.prediction === 1) {
+                resultVal.textContent = 'CHURN RISK';
+                resultVal.className = 'result-value result-danger';
+            } else {
+                resultVal.textContent = 'SAFE (ACTIVE)';
+                resultVal.className = 'result-value result-success';
+            }
+            resultConf.textContent = `Confidence: ${(result.probability * 100).toFixed(2)}%`;
+        } catch (error) {
+            alert('Error making prediction.');
+        } finally {
+            btn.innerHTML = '<i class="fas fa-magic"></i> Predict Churn';
+            btn.disabled = false;
+        }
+    });
+</script>
+{% endblock %}

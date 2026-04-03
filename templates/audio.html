@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}Indian Language Audio AI{% endblock %}
+
+{% block content %}
+<div class="form-container fade-in-up" style="max-width: 700px;">
+    <div class="form-header">
+        <div class="card-icon gradient-pink" style="margin: 0 auto 1.5rem auto;">
+            <i class="fas fa-microphone-alt">🎙️</i>
+        </div>
+        <h2>Indian Language Voice AI</h2>
+        <p style="color: var(--text-muted);">Analyzes voice structure via Mel-Spectrogram Images (2D CNN).</p>
+    </div>
+
+    <form id="upload-form">
+        <div class="upload-zone" id="drop-zone">
+            <input type="file" id="file-input" name="audio" class="file-input" accept="audio/*" required>
+            <div class="upload-icon"><i class="fas fa-music"></i></div>
+            <div class="upload-text" id="file-name-text">Drop Audio File Here</div>
+            <div class="upload-subtext">Supports WAV, MP3, M4A</div>
+            
+            <!-- Audio Preview Player -->
+            <audio id="audio-preview" controls style="display:none; width: 100%; margin-top: 1rem; border-radius: 8px; outline: none;"></audio>
+        </div>
+
+        <button type="submit" class="btn-primary" id="submit-btn" style="display:none; margin-top:2rem;">
+            <i class="fas fa-assistive-listening-systems"></i> Predict Language
+        </button>
+    </form>
+
+    <div class="result-card" id="result-box">
+        <div class="result-title">Spoken Language</div>
+        <div class="result-value" id="result-val" style="color: var(--accent-pink);">--</div>
+        
+        <div class="prob-bars" id="prob-bars"></div>
+    </div>
+</div>
+
+<script>
+    const fileInput = document.getElementById('file-input');
+    const fileNameTxt = document.getElementById('file-name-text');
+    const submitBtn = document.getElementById('submit-btn');
+    const audioPreview = document.getElementById('audio-preview');
+
+    fileInput.addEventListener('change', function() {
+        if (this.files && this.files[0]) {
+            fileNameTxt.textContent = this.files[0].name;
+            
+            // Generate object URL for preview and reveal player
+            audioPreview.src = URL.createObjectURL(this.files[0]);
+            audioPreview.style.display = 'block';
+            
+            submitBtn.style.display = 'block';
+        }
+    });
+
+    document.getElementById('upload-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        submitBtn.innerHTML = '<i class="fas fa-cog fa-spin"></i> Processing Signal...';
+        submitBtn.disabled = true;
+
+        const formData = new FormData(e.target);
+        try {
+            const response = await fetch('/api/audio/predict', { method: 'POST', body: formData });
+            const result = await response.json();
+            
+            if (result.error) {
+                alert(result.error);
+                return;
+            }
+
+            const resultBox = document.getElementById('result-box');
+            const resultVal = document.getElementById('result-val');
+            const probBars = document.getElementById('prob-bars');
+            
+            resultBox.classList.add('active');
+            let name = result.class.toUpperCase();
+            resultVal.textContent = name;
+            
+            probBars.innerHTML = '';
+            
+            result.probabilities.forEach(prob => {
+                const isTop = prob.class_name === result.class;
+                probBars.innerHTML += `
+                    <div class="prob-bar-container">
+                        <div class="prob-label" style="text-transform: uppercase; font-size:0.8rem; font-weight: ${isTop?'bold':'normal'}; color:${isTop?'var(--accent-pink)':'#fff'}">${prob.class_name}</div>
+                        <div class="prob-track">
+                            <div class="prob-fill" style="width: ${prob.prob}%; background: ${isTop ? 'var(--accent-pink)' : 'rgba(255,255,255,0.2)'}"></div>
+                        </div>
+                        <div class="prob-pct" style="color:${isTop?'var(--accent-pink)':'var(--text-muted)'}">${prob.prob.toFixed(1)}%</div>
+                    </div>
+                `;
+            });
+            
+        } catch (error) {
+            alert('Error classifying audio. Ensure backend has Librosa installed and file is valid.');
+        } finally {
+            submitBtn.innerHTML = '<i class="fas fa-assistive-listening-systems"></i> Predict Language';
+            submitBtn.disabled = false;
+        }
+    });
+
+    // Cleanup memory when leaving page
+    window.addEventListener('beforeunload', () => {
+        if (audioPreview.src) URL.revokeObjectURL(audioPreview.src);
+    });
+</script>
+{% endblock %}
