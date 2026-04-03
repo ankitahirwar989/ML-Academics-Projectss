@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+ENV/
+
+# Jupyter Notebooks
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
+
+# Datasets & Temp Files
+dataset/
+tmp_uploads/
+loan_diag_out.txt
+
+# Sensitive Information
+kaggle.json
+
+# IDEs
+.vscode/
+.idea/
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Large Model Files (Optional: If they are >100MB, they should be ignored or used with Git LFS)
+# *.h5
+# *.pkl
+# *.pth

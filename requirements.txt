@@ -1,0 +1,11 @@
+flask
+werkzeug
+Pillow
+numpy<2.0.0
+scikit-learn
+tensorflow
+librosa
+matplotlib
+pydub
+xgboost
+kaggle

@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ML Portal — Viva Notes</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --blue: #2563eb; --green: #059669; --orange: #d97706;
+    --red: #dc2626; --purple: #7c3aed; --gray: #6b7280;
+    --border: #e5e7eb; --bg: #f9fafb; --text: #111827;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    font-size: 10.5pt;
+    color: var(--text);
+    background: white;
+    line-height: 1.65;
+    padding: 0;
+  }
+
+  /* PRINT STYLES */
+  @media print {
+    body { font-size: 9.5pt; }
+    .cover { page-break-after: always; }
+    .no-break { page-break-inside: avoid; }
+    h2 { page-break-before: auto; }
+    @page { margin: 1.8cm 1.5cm; size: A4; }
+    .print-btn { display: none !important; }
+  }
+
+  /* COVER PAGE */
+  .cover {
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    min-height: 100vh; text-align: center;
+    background: linear-gradient(135deg, #0f1629 0%, #1a1040 50%, #0f1629 100%);
+    color: white; padding: 3rem;
+    position: relative; overflow: hidden;
+  }
+  .cover::before {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 30% 40%, rgba(37,99,235,0.2) 0%, transparent 60%),
+                radial-gradient(ellipse at 70% 60%, rgba(124,58,237,0.15) 0%, transparent 60%);
+  }
+  .cover-content { position: relative; z-index: 1; }
+  .cover-badge {
+    display: inline-block; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 100px; padding: 0.3rem 0.9rem; font-size: 8pt;
+    letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 2rem; color: #93c5fd;
+  }
+  .cover h1 { font-size: 2.5rem; font-weight: 700; line-height: 1.2; margin-bottom: 1rem; }
+  .cover h1 span { color: #60a5fa; }
+  .cover-sub { font-size: 1.05rem; color: rgba(255,255,255,0.6); max-width: 440px; line-height: 1.6; margin-bottom: 2.5rem; }
+  .cover-grid { display: flex; gap: 2rem; justify-content: center; flex-wrap: wrap; margin-bottom: 2.5rem; }
+  .cover-stat { text-align: center; }
+  .cover-stat .num { font-size: 1.9rem; font-weight: 700; color: #60a5fa; font-family: 'JetBrains Mono', monospace; }
+  .cover-stat .lbl { font-size: 0.72rem; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.08em; }
+  .cover-footer { font-size: 0.78rem; color: rgba(255,255,255,0.35); }
+
+  /* CONTENT */
+  .content { max-width: 820px; margin: 0 auto; padding: 2.5rem 2rem; }
+
+  /* SECTION HEADER */
+  .part-header {
+    background: linear-gradient(135deg, var(--blue) 0%, var(--purple) 100%);
+    color: white; border-radius: 10px; padding: 1rem 1.5rem;
+    margin: 2.5rem 0 1.5rem; display: flex; align-items: center; gap: 0.75rem;
+  }
+  .part-header .part-num { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.7; display: block; }
+  .part-header h2 { font-size: 1.1rem; font-weight: 600; }
+
+  h3 { font-size: 1rem; font-weight: 600; margin: 1.5rem 0 0.6rem; color: var(--blue); display: flex; align-items: center; gap: 0.4rem; }
+  h3::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  p { margin: 0.5rem 0; }
+
+  /* BLOCKQUOTE */
+  blockquote {
+    border-left: 3px solid var(--blue); background: #eff6ff;
+    padding: 0.6rem 1rem; border-radius: 0 8px 8px 0;
+    margin: 0.75rem 0; font-size: 9.5pt; color: #1e40af;
+  }
+
+  /* CODE */
+  pre {
+    background: #0f1629; color: #e2e8f0;
+    border-radius: 8px; padding: 1rem 1.2rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8pt; overflow-x: auto; margin: 0.75rem 0;
+    line-height: 1.7; border: 1px solid #1e2d4a;
+  }
+  code {
+    font-family: 'JetBrains Mono', monospace;
+    background: #f1f5f9; color: #7c3aed;
+    padding: 0.1em 0.35em; border-radius: 4px; font-size: 0.88em;
+  }
+
+  /* TABLES */
+  table { width: 100%; border-collapse: collapse; margin: 0.75rem 0; font-size: 9.5pt; }
+  th { background: #1e293b; color: white; padding: 0.55rem 0.85rem; text-align: left; font-weight: 600; font-size: 8.5pt; letter-spacing: 0.02em; }
+  th:first-child { border-radius: 6px 0 0 0; }
+  th:last-child { border-radius: 0 6px 0 0; }
+  td { padding: 0.5rem 0.85rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  tr:nth-child(even) td { background: #f8fafc; }
+
+  /* PILLS / BADGES */
+  .pill {
+    display: inline-block; border-radius: 100px;
+    padding: 0.15em 0.6em; font-size: 8pt; font-weight: 600; margin: 0.1rem;
+  }
+  .pill-blue   { background: #dbeafe; color: #1d4ed8; }
+  .pill-green  { background: #d1fae5; color: #065f46; }
+  .pill-purple { background: #ede9fe; color: #5b21b6; }
+  .pill-orange { background: #fef3c7; color: #92400e; }
+  .pill-red    { background: #fee2e2; color: #991b1b; }
+
+  /* Q&A CARDS */
+  .qa-card {
+    border: 1px solid var(--border); border-radius: 8px;
+    margin: 0.75rem 0; overflow: hidden;
+  }
+  .qa-q {
+    background: #1e293b; color: white;
+    padding: 0.6rem 1rem; font-weight: 600; font-size: 9.5pt;
+  }
+  .qa-a { padding: 0.7rem 1rem; font-size: 9.5pt; background: #fafafa; }
+
+  /* CALLOUT */
+  .callout {
+    border-radius: 8px; padding: 0.75rem 1rem;
+    margin: 0.75rem 0; font-size: 9.5pt; display: flex; gap: 0.6rem; align-items: flex-start;
+  }
+  .callout-blue   { background: #eff6ff; border: 1px solid #bfdbfe; }
+  .callout-green  { background: #f0fdf4; border: 1px solid #bbf7d0; }
+  .callout-orange { background: #fffbeb; border: 1px solid #fde68a; }
+
+  /* CONCEPT BOX */
+  .concept-box {
+    border: 1px solid var(--border); border-radius: 10px;
+    padding: 1rem 1.2rem; margin: 0.75rem 0; background: white;
+  }
+  .concept-box h4 { font-size: 0.9rem; font-weight: 700; color: var(--text); margin-bottom: 0.4rem; }
+
+  /* PRINT BUTTON */
+  .print-btn {
+    position: fixed; bottom: 2rem; right: 2rem;
+    background: linear-gradient(135deg, #2563eb, #7c3aed);
+    color: white; border: none; border-radius: 100px;
+    padding: 0.85rem 1.75rem; font-family: 'Inter', sans-serif;
+    font-size: 0.95rem; font-weight: 600; cursor: pointer;
+    box-shadow: 0 8px 24px rgba(37,99,235,0.4);
+    transition: transform 0.2s, box-shadow 0.2s;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .print-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(37,99,235,0.5); }
+
+  ul, ol { padding-left: 1.4rem; margin: 0.5rem 0; }
+  li { margin: 0.25rem 0; }
+  b { font-weight: 600; }
+  .mt { margin-top: 1rem; }
+  .tag { display: inline-block; background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0;
+         border-radius: 6px; padding: 0.15rem 0.5rem; font-size: 8pt; font-family: 'JetBrains Mono', monospace; }
+</style>
+</head>
+<body>
+
+<!-- COVER PAGE -->
+<div class="cover">
+  <div class="cover-content">
+    <div class="cover-badge">⚡ Machine Learning Project</div>
+    <h1>Unified ML Portal<br><span>Viva Preparation Notes</span></h1>
+    <p class="cover-sub">Complete guide covering what was built, how it works, all algorithms, libraries, concepts, and viva Q&amp;A — from basics to implementation.</p>
+    <div class="cover-grid">
+      <div class="cover-stat"><div class="num">5</div><div class="lbl">AI Models</div></div>
+      <div class="cover-stat"><div class="num">9</div><div class="lbl">Libraries</div></div>
+      <div class="cover-stat"><div class="num">15+</div><div class="lbl">Q&amp;A</div></div>
+      <div class="cover-stat"><div class="num">3</div><div class="lbl">Model Types</div></div>
+    </div>
+    <div class="cover-footer">Gradient Boosting · XGBoost · MobileNetV2 · Transfer Learning · Flask · Scikit-Learn</div>
+  </div>
+</div>
+
+<div class="content">
+
+<!-- ═══ PART 1 ═══ -->
+<div class="part-header">
+  <div><span class="part-num">Part 1</span><h2>What We Built — Project Overview</h2></div>
+</div>
+
+<h3>Project Summary</h3>
+<p>We built a <b>Unified ML Web Portal</b> — a Flask-based web application hosting <b>5 different machine learning models</b>, each solving a real-world problem. Users open a browser page, input data or upload a file, and get an AI prediction instantly.</p>
+
+<table>
+  <tr><th>#</th><th>Model</th><th>Algorithm</th><th>Input</th><th>Output</th></tr>
+  <tr><td>1</td><td>E-commerce Churn</td><td>Gradient Boosting</td><td>18 customer features</td><td>Churn / Not Churn</td></tr>
+  <tr><td>2</td><td>Loan Approval</td><td>XGBoost Pipeline</td><td>13 financial features</td><td>Approved / Rejected</td></tr>
+  <tr><td>3</td><td>Face Mask Detection</td><td>MobileNetV2 (CNN)</td><td>Face photo</td><td>Mask / No Mask / Incorrect</td></tr>
+  <tr><td>4</td><td>Fruit &amp; Vegetable</td><td>MobileNetV2 (CNN)</td><td>Food photo</td><td>36 class labels</td></tr>
+  <tr><td>5</td><td>Indian Language Audio</td><td>CNN + Mel-Spectrogram</td><td>.wav / .mp3 audio</td><td>Language (10 classes)</td></tr>
+</table>
+
+<h3>Tech Stack</h3>
+<div style="display:flex; flex-wrap:wrap; gap:0.4rem; margin:0.5rem 0;">
+  <span class="pill pill-blue">Python 3.11</span>
+  <span class="pill pill-blue">Flask</span>
+  <span class="pill pill-blue">scikit-learn</span>
+  <span class="pill pill-blue">XGBoost</span>
+  <span class="pill pill-purple">TensorFlow / Keras</span>
+  <span class="pill pill-purple">MobileNetV2</span>
+  <span class="pill pill-green">pandas</span>
+  <span class="pill pill-green">NumPy</span>
+  <span class="pill pill-orange">librosa</span>
+  <span class="pill pill-orange">Pillow (PIL)</span>
+  <span class="pill pill-red">pickle</span>
+</div>
+
+<h3>How the App Flows</h3>
+<pre>Browser → HTTP Request → Flask Route → Load Model → Predict → JSON → Browser shows result</pre>
+<ol>
+  <li>User opens <code>http://localhost:5000/loan</code></li>
+  <li>JavaScript calls <code>/api/loan/features</code> → gets field names</li>
+  <li>User fills form and clicks Submit</li>
+  <li>JS sends POST to <code>/api/loan/predict</code> with form data as JSON</li>
+  <li>Flask runs <code>pipeline.predict()</code> and <code>predict_proba()</code></li>
+  <li>Returns <code>{"prediction": 1, "probability": 0.87}</code></li>
+  <li>Browser shows "APPROVED — 87% confidence"</li>
+</ol>
+
+<!-- ═══ PART 2 ═══ -->
+<div class="part-header">
+  <div><span class="part-num">Part 2</span><h2>Machine Learning — From the Basics</h2></div>
+</div>
+
+<h3>What is Machine Learning?</h3>
+<p>ML is a branch of AI where we <b>train a computer to learn patterns from data</b> instead of manually writing rules.</p>
+<blockquote>Instead of writing <code>if credit_score &gt; 700: approve</code>, we show the model 10,000 past decisions and it learns the pattern itself.</blockquote>
+
+<h3>3 Types of Machine Learning</h3>
+<table>
+  <tr><th>Type</th><th>Description</th><th>Our Use</th></tr>
+  <tr><td><b>Supervised</b></td><td>Trained on labelled data (input + correct answer)</td><td>All 5 models</td></tr>
+  <tr><td><b>Unsupervised</b></td><td>Finds hidden patterns without labels</td><td>Not used here</td></tr>
+  <tr><td><b>Reinforcement</b></td><td>Agent learns by reward/punishment</td><td>Not used here</td></tr>
+</table>
+
+<h3>Key Concepts</h3>
+<div class="concept-box">
+  <h4>Features vs Labels</h4>
+  <p><b>Features (X):</b> Input variables — e.g., credit_score, age, income<br>
+  <b>Label (Y):</b> What we predict — e.g., loan_approved = 0 or 1</p>
+</div>
+<div class="concept-box">
+  <h4>Training vs Testing Split</h4>
+  <p><b>Training set (80%):</b> Model learns from this data<br>
+  <b>Test set (20%):</b> Used to check if model generalised well<br>
+  <i>Why separate?</i> To prevent the model from just "memorising" answers.</p>
+</div>
+<div class="concept-box">
+  <h4>Overfitting vs Underfitting</h4>
+  <p><b>Underfitting:</b> Model too simple → misses patterns → poor accuracy on both sets<br>
+  <b>Overfitting:</b> Model too complex → memorises training data → bad on new data<br>
+  <b>Good fit:</b> Learns the pattern → works well on new data</p>
+</div>
+<div class="concept-box">
+  <h4>Bias-Variance Tradeoff</h4>
+  <p><b>High Bias</b> = underfitting (wrong assumptions) &nbsp;|&nbsp; <b>High Variance</b> = overfitting (too sensitive)<br>Goal: find the sweet spot where both are low.</p>
+</div>
+
+<!-- ═══ PART 3 ═══ -->
+<div class="part-header">
+  <div><span class="part-num">Part 3</span><h2>Algorithms Used — Explained in Detail</h2></div>
+</div>
+
+<h3>Algorithm 1 — Decision Tree (Foundation)</h3>
+<p>A tree of if-else questions. Each node splits data based on a feature to minimise <b>Gini Impurity</b> or maximise <b>Information Gain</b>.</p>
+<pre>Is credit_score &gt; 700?
+├── Yes → Is income &gt; 50000?
+│         ├── Yes → APPROVE ✓
+│         └── No  → REJECT ✗
+└── No  → REJECT ✗</pre>
+<p><b>Problem:</b> A single tree overfits easily. Solution → use many trees (ensemble methods).</p>
+
+<h3>Algorithm 2 — Gradient Boosting (E-commerce Churn Model)</h3>
+<p>Builds many <b>weak Decision Trees sequentially</b>. Each new tree corrects the errors (residuals) of the previous one.</p>
+<ol>
+  <li>Start with a simple prediction (e.g., the average)</li>
+  <li>Calculate residuals (errors)</li>
+  <li>Train a small tree to predict those residuals</li>
+  <li>Add tree × learning_rate to the ensemble</li>
+  <li>Repeat n_estimators times</li>
+</ol>
+<pre>from sklearn.ensemble import GradientBoostingClassifier
+model = GradientBoostingClassifier(n_estimators=50, random_state=42)
+model.fit(X_train, y_train)</pre>
+<p><b>Key parameters:</b> <code>n_estimators=50</code> (number of trees), <code>learning_rate=0.1</code> (contribution per tree), <code>max_depth</code> (tree depth)</p>
+
+<h3>Algorithm 3 — XGBoost (Loan Approval Model)</h3>
+<p>"Extreme Gradient Boosting" — a faster, regularised version of Gradient Boosting.</p>
+<table>
+  <tr><th>Feature</th><th>Standard GB</th><th>XGBoost</th></tr>
+  <tr><td>Speed</td><td>Sequential only</td><td>Parallel processing</td></tr>
+  <tr><td>Regularisation</td><td>None</td><td>L1 + L2 built-in</td></tr>
+  <tr><td>Missing values</td><td>Manual handling</td><td>Automatic</td></tr>
+  <tr><td>Kaggle wins</td><td>Few</td><td>Dominant</td></tr>
+</table>
+<pre>import xgboost as xgb
+from sklearn.pipeline import Pipeline
+from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+
+preprocessor = ColumnTransformer([
+    ('num', StandardScaler(), numeric_features),
+    ('cat', OneHotEncoder(handle_unknown='ignore'), categorical_features)
+])
+pipeline = Pipeline([('preprocessing', preprocessor),
+                     ('model', xgb.XGBClassifier(n_estimators=100))])
+pipeline.fit(X, y)</pre>
+<p><b>Pipeline:</b> Chains preprocessing + model into one object. Prevents <b>data leakage</b> — scaling parameters learned on training data are correctly applied to test data.</p>
+
+<h3>Algorithm 4 — CNN (Face Mask, Fruit/Veg, Audio Models)</h3>
+<p>Convolutional Neural Networks process images by detecting local features using learnable <b>filters</b>.</p>
+<table>
+  <tr><th>Layer</th><th>Purpose</th></tr>
+  <tr><td>Conv2D</td><td>Apply filters to detect edges → shapes → objects</td></tr>
+  <tr><td>MaxPooling2D</td><td>Downsample — keep strongest features, reduce size</td></tr>
+  <tr><td>GlobalAveragePooling2D</td><td>Flatten feature maps to a single vector</td></tr>
+  <tr><td>Dense</td><td>Fully connected classification layers</td></tr>
+  <tr><td>Softmax</td><td>Convert scores to probabilities summing to 1</td></tr>
+</table>
+<p><b>Activation Functions:</b><br>
+<code>ReLU: f(x) = max(0, x)</code> — kills negatives, prevents vanishing gradients<br>
+<code>Softmax: σ(z)ᵢ = eᶻⁱ / Σeᶻʲ</code> — normalises output to probabilities</p>
+
+<h3>Algorithm 5 — MobileNetV2 + Transfer Learning</h3>
+<p><b>Transfer Learning:</b> Reuse a model trained on 1.4M images (ImageNet) and fine-tune it for our task.</p>
+<blockquote>Training from scratch requires millions of images + weeks. Transfer Learning needs only thousands of images and hours.</blockquote>
+<pre>base = tf.keras.applications.MobileNetV2(weights='imagenet', include_top=False, input_shape=(224,224,3))
+model = tf.keras.Sequential([
+    base, GlobalAveragePooling2D(), Dropout(0.4),
+    Dense(256, activation='relu'),
+    Dense(num_classes, activation='softmax')  # Our custom head
+])</pre>
+<p><b>MobileNetV2</b> uses <b>Depthwise Separable Convolutions</b> — same accuracy as standard conv but 8–9× fewer computations. Designed for mobile/embedded devices.</p>
+
+<h3>Algorithm 6 — Mel-Spectrogram (Audio Classification)</h3>
+<p>Audio can't go directly into an image CNN. Conversion steps:</p>
+<ol>
+  <li>Load audio with <code>librosa.load()</code></li>
+  <li>Trim silence with <code>librosa.effects.trim()</code></li>
+  <li>Generate Mel-Spectrogram (2D image: time × frequency)</li>
+  <li>Resize to 224×224, feed into MobileNetV2</li>
+</ol>
+<pre>S = librosa.feature.melspectrogram(y=audio, sr=22050, n_mels=128)
+S_dB = librosa.power_to_db(S, ref=np.max)  # Convert to decibels</pre>
+<blockquote><b>Why Mel scale?</b> Human hearing is logarithmic — the Mel scale compresses high frequencies the way our ears do, making it ideal for speech and language audio.</blockquote>
+
+<!-- ═══ PART 4 ═══ -->
+<div class="part-header">
+  <div><span class="part-num">Part 4</span><h2>Libraries — Purpose &amp; Key Code</h2></div>
+</div>
+
+<h3>NumPy</h3>
+<p>Numerical computing. Provides fast N-dimensional arrays (<code>ndarray</code>) for matrix operations.</p>
+<pre>import numpy as np
+arr = np.array([[1,2],[3,4]])   # Create array
+pixels = img_array / 255.0      # Normalise image to [0, 1]
+idx = np.argmax(predictions)    # Index of highest probability</pre>
+
+<h3>pandas</h3>
+<p>Data manipulation. DataFrame = Excel table in Python.</p>
+<pre>df = pd.read_csv('data.csv')
+df.drop('CustomerID', axis=1)          # Remove column
+cats = df.select_dtypes(include='object')  # Get text columns
+X = df.drop('Churn', axis=1)           # Separate features
+y = df['Churn']                        # Separate target</pre>
+
+<h3>scikit-learn (sklearn)</h3>
+<p>The standard Python ML library. Contains preprocessing, models, evaluation, and utilities.</p>
+<table>
+  <tr><th>Class</th><th>Purpose</th></tr>
+  <tr><td><code>LabelEncoder</code></td><td>['Male','Female'] → [0, 1]</td></tr>
+  <tr><td><code>OneHotEncoder</code></td><td>['Cat','Dog'] → [[1,0],[0,1]]</td></tr>
+  <tr><td><code>StandardScaler</code></td><td>Scales to mean=0, std=1</td></tr>
+  <tr><td><code>GradientBoostingClassifier</code></td><td>Our churn model</td></tr>
+  <tr><td><code>Pipeline</code></td><td>Chain of preprocessing + model</td></tr>
+  <tr><td><code>ColumnTransformer</code></td><td>Apply transforms to specific columns</td></tr>
+</table>
+<p><b>Why scale?</b> <code>StandardScaler</code> applies: <code>z = (x − mean) / std</code>. Algorithms like SVM, KNN, and Neural Nets are distance-based — without scaling, income (50,000) would dominate over age (30).</p>
+
+<h3>XGBoost</h3>
+<pre>import xgboost as xgb
+model = xgb.XGBClassifier(n_estimators=100, eval_metric='logloss')
+model.fit(X_train, y_train)
+prob = model.predict_proba(X_test)[:, 1]  # Probability of class 1</pre>
+
+<h3>TensorFlow / Keras</h3>
+<p>Google's deep learning framework. Keras is the high-level API.</p>
+<pre>import tensorflow as tf
+model = tf.keras.models.load_model('face_mask_classifier.keras')
+preds = model.predict(img_array, verbose=0)[0]  # [0.05, 0.90, 0.05]
+idx = int(np.argmax(preds))  # → 1 (with_mask)</pre>
+
+<h3>Flask</h3>
+<p>Lightweight Python web framework. Creates HTTP routes.</p>
+<pre>from flask import Flask, request, jsonify
+app = Flask(__name__)
+
+@app.route('/api/loan/predict', methods=['POST'])
+def loan_predict():
+    data = request.json          # Get JSON from browser
+    df = pd.DataFrame([data])
+    pred = pipeline.predict(df)[0]
+    prob = pipeline.predict_proba(df)[0][1]
+    return jsonify({'prediction': int(pred), 'probability': float(prob)})</pre>
+
+<h3>librosa</h3>
+<pre>y, sr = librosa.load('audio.wav', sr=22050)    # Load, resample to 22kHz
+y, _ = librosa.effects.trim(y, top_db=20)      # Remove silence
+S = librosa.feature.melspectrogram(y=y, sr=sr) # Generate spectrogram</pre>
+
+<h3>pickle</h3>
+<p>Serialises Python objects to binary files for saving/loading trained models.</p>
+<pre>import pickle
+pickle.dump(model, open('model.pkl', 'wb'))   # Save to file
+model = pickle.load(open('model.pkl', 'rb'))  # Load back</pre>
+
+<!-- ═══ PART 5 ═══ -->
+<div class="part-header">
+  <div><span class="part-num">Part 5</span><h2>Preprocessing Steps for Tabular Data</h2></div>
+</div>
+
+<h3>Step-by-Step Workflow</h3>
+<ol>
+  <li><b>Load data</b> → <code>pd.read_csv('file.csv')</code></li>
+  <li><b>Drop irrelevant columns</b> → e.g., Customer ID</li>
+  <li><b>Separate X and y</b> → features and target label</li>
+  <li><b>Identify column types</b> → object = categorical, int/float = numerical</li>
+  <li><b>Encode categoricals</b> → <code>LabelEncoder().fit_transform()</code></li>
+  <li><b>Scale numericals</b> → <code>StandardScaler().fit_transform()</code></li>
+  <li><b>Train model</b> → <code>model.fit(X, y)</code></li>
+  <li><b>Save model</b> → <code>pickle.dump(model, file)</code></li>
+</ol>
+
+<div class="callout callout-orange">
+  ⚠️ <b>Data Leakage Warning:</b> Always call <code>.fit_transform()</code> only on training data. Call <code>.transform()</code> on test/new data. Never peek at test data during training — it inflates reported accuracy.
+</div>
+
+<h3>Encoding: LabelEncoder vs OneHotEncoder</h3>
+<table>
+  <tr><th>Encoder</th><th>Input</th><th>Output</th><th>When to use</th></tr>
+  <tr><td><b>LabelEncoder</b></td><td>['Cat','Dog','Bird']</td><td>[0, 1, 2]</td><td>Ordinal data (Small&lt;Med&lt;Large) or tree models</td></tr>
+  <tr><td><b>OneHotEncoder</b></td><td>['Cat','Dog','Bird']</td><td>[1,0,0] [0,1,0] [0,0,1]</td><td>Nominal (no order) with linear/distance models</td></tr>
+</table>
+
+<!-- ═══ PART 6 ═══ -->
+<div class="part-header">
+  <div><span class="part-num">Part 6</span><h2>Evaluation Metrics</h2></div>
+</div>
+
+<h3>For Classification (All Our Models)</h3>
+<table>
+  <tr><th>Metric</th><th>Formula</th><th>Meaning</th></tr>
+  <tr><td><b>Accuracy</b></td><td>Correct / Total</td><td>% predictions that are correct</td></tr>
+  <tr><td><b>Precision</b></td><td>TP / (TP + FP)</td><td>Of predicted positives, how many are truly positive</td></tr>
+  <tr><td><b>Recall</b></td><td>TP / (TP + FN)</td><td>Of actual positives, how many did we find</td></tr>
+  <tr><td><b>F1 Score</b></td><td>2×(P×R)/(P+R)</td><td>Harmonic mean of Precision and Recall</td></tr>
+  <tr><td><b>AUC-ROC</b></td><td>Area under ROC curve</td><td>Model's ability to separate classes (1.0 = perfect)</td></tr>
+</table>
+<div class="callout callout-blue">
+  💡 <b>For loan approval:</b> Recall matters more — missing a true defaulter (False Negative) costs the bank money. For face mask: Precision matters — we don't want to incorrectly flag a masked person.
+</div>
+
+<h3>Confusion Matrix Terminology</h3>
+<table>
+  <tr><th></th><th>Predicted Positive</th><th>Predicted Negative</th></tr>
+  <tr><td><b>Actually Positive</b></td><td>TP (True Positive) ✅</td><td>FN (False Negative) ❌</td></tr>
+  <tr><td><b>Actually Negative</b></td><td>FP (False Positive) ❌</td><td>TN (True Negative) ✅</td></tr>
+</table>
+
+<!-- ═══ PART 7 ═══ -->
+<div class="part-header">
+  <div><span class="part-num">Part 7</span><h2>Viva Q &amp; A — 15 Key Questions</h2></div>
+</div>
+
+<div class="qa-card no-break">
+  <div class="qa-q">Q1: What is the difference between classification and regression?</div>
+  <div class="qa-a">Classification predicts a <b>category</b> (Approved/Rejected, Mask/No Mask). Regression predicts a <b>continuous number</b> (price, temperature, salary). All 5 of our models are classification.</div>
+</div>
+
+<div class="qa-card no-break">
+  <div class="qa-q">Q2: Why Gradient Boosting for churn instead of a simple Decision Tree?</div>
+  <div class="qa-a">A single Decision Tree overfits easily — it memorises the training data. Gradient Boosting builds many trees sequentially, each correcting the errors of the previous, which gives much better generalisation on new data.</div>
+</div>
+
+<div class="qa-card no-break">
+  <div class="qa-q">Q3: What is the difference between XGBoost and Gradient Boosting?</div>
+  <div class="qa-a">XGBoost is faster (uses parallel processing), has built-in L1/L2 regularisation to prevent overfitting, automatically handles missing values, and has second-order gradient optimisation for better precision.</div>
+</div>
+
+<div class="qa-card no-break">
+  <div class="qa-q">Q4: Why do we normalise/scale features?</div>
+  <div class="qa-a">Many algorithms (SVM, KNN, Neural Networks) are distance-based. Without scaling, income (50,000) would dominate over age (30). StandardScaler transforms each feature to mean=0, std=1 using: <code>z = (x − μ) / σ</code>.</div>
+</div>
+
+<div class="qa-card no-break">
+  <div class="qa-q">Q5: What is Transfer Learning?</div>
+  <div class="qa-a">Reusing a model trained on a huge dataset (MobileNetV2 on ImageNet's 1.4M images) for a smaller, specific task. We keep the learned feature detectors and only retrain the final classification layers. Much faster and requires far less data.</div>
+</div>
+
+<div class="qa-card no-break">
+  <div class="qa-q">Q6: What is a Mel-Spectrogram?</div>
+  <div class="qa-a">A 2D visual representation of audio — time on X-axis, Mel-frequency on Y-axis, colour intensity = loudness. The Mel scale mimics human hearing (logarithmic). We convert audio to spectrogram images and classify them with MobileNetV2 CNN.</div>
+</div>
+
+<div class="qa-card no-break">
+  <div class="qa-q">Q7: What is a Pipeline in sklearn?</div>
+  <div class="qa-a">A Pipeline chains multiple processing steps (scaler + encoder + model) into one object. When you call <code>pipeline.fit(X_train)</code>, all steps run in order. When you call <code>pipeline.predict(X_test)</code>, the same transforms are applied consistently, preventing data leakage.</div>
+</div>
+
+<div class="qa-card no-break">
+  <div class="qa-q">Q8: What is overfitting and how do you prevent it?</div>
+  <div class="qa-a">Overfitting = model memorises training data but fails on new data (high training accuracy, low test accuracy). Prevention: more training data, regularisation (L1/L2), Dropout layers in NNs, cross-validation, early stopping, pruning trees.</div>
+</div>
+
+<div class="qa-card no-break">
+  <div class="qa-q">Q9: What is softmax activation?</div>
+  <div class="qa-a">Converts raw output scores into probabilities that sum to 1. Formula: <code>σ(z)ᵢ = eᶻⁱ / Σeᶻʲ</code>. Example: [2.1, 0.3, 1.5] → [0.65, 0.08, 0.27]. Used in the final layer of multi-class classifiers.</div>
+</div>
+
+<div class="qa-card no-break">
+  <div class="qa-q">Q10: What is the role of Flask in this project?</div>
+  <div class="qa-a">Flask is the web server that bridges the ML backend with the browser frontend. It handles HTTP requests, loads models, runs predictions, and returns results as JSON. Routes like <code>@app.route('/api/loan/predict', methods=['POST'])</code> expose the ML models as APIs.</div>
+</div>
+
+<div class="qa-card no-break">
+  <div class="qa-q">Q11: Why LabelEncoder for some columns and OneHotEncoder for others?</div>
+  <div class="qa-a">LabelEncoder is used with tree-based models (they can handle ordinal integers). OneHotEncoder is used in the loan pipeline because XGBoost was wrapped in a sklearn Pipeline expecting properly encoded categorical variables without implied order.</div>
+</div>
+
+<div class="qa-card no-break">
+  <div class="qa-q">Q12: Explain .fit(), .transform(), .fit_transform()</div>
+  <div class="qa-a"><code>.fit()</code> — Learns parameters from data (e.g., mean and std for StandardScaler)<br>
+  <code>.transform()</code> — Applies learned parameters to new data<br>
+  <code>.fit_transform()</code> — Both in one step. <b>Only call on training data!</b> Use <code>.transform()</code> on test/new data.</div>
+</div>
+
+<div class="qa-card no-break">
+  <div class="qa-q">Q13: What is MobileNetV2 and why use it?</div>
+  <div class="qa-a">MobileNetV2 is a lightweight CNN from Google, trained on ImageNet. It uses Depthwise Separable Convolutions — same accuracy as regular conv but 8–9× fewer computations. Used as the backbone for our image and audio models via transfer learning.</div>
+</div>
+
+<div class="qa-card no-break">
+  <div class="qa-q">Q14: What is ReLU and why is it used in deep learning?</div>
+  <div class="qa-a">ReLU (Rectified Linear Unit): <code>f(x) = max(0, x)</code>. It sets all negative values to zero. Benefits: computationally simple, allows deep networks to train without vanishing gradients (unlike sigmoid/tanh), creates sparsity (many zeros = efficient).</div>
+</div>
+
+<div class="qa-card no-break">
+  <div class="qa-q">Q15: What challenges did you face and how did you solve them?</div>
+  <div class="qa-a">
+    <b>1. UnpicklingError (STACK_GLOBAL):</b> Binary corruption in .pkl files due to CRLF characters. Solved by regenerating fresh model files using the correct venv Python.<br>
+    <b>2. ModuleNotFoundError:</b> pip and python were pointing to different environments. Fixed with <code>python -m pip install</code>.<br>
+    <b>3. Dropdowns showing "Yes/No" for all categories:</b> Backend cat_mapping failed silently. Fixed by hardcoding category values directly in HTML/JS, removing backend dependency.
+  </div>
+</div>
+
+<!-- ═══ PART 8 ═══ -->
+<div class="part-header">
+  <div><span class="part-num">Part 8</span><h2>Quick Reference Cheat Sheet</h2></div>
+</div>
+<table>
+  <tr><th>Concept</th><th>One-line Definition</th></tr>
+  <tr><td>Supervised Learning</td><td>Learn from labelled (input, output) pairs</td></tr>
+  <tr><td>Decision Tree</td><td>If-else tree that splits data to maximise purity</td></tr>
+  <tr><td>Gradient Boosting</td><td>Many trees in sequence, each fixing the last one's errors</td></tr>
+  <tr><td>XGBoost</td><td>Faster, regularised Gradient Boosting with parallel processing</td></tr>
+  <tr><td>Neural Network</td><td>Layers of weighted connections that learn non-linear patterns</td></tr>
+  <tr><td>CNN</td><td>NN that uses filters to detect local spatial patterns in images</td></tr>
+  <tr><td>Transfer Learning</td><td>Reuse a pretrained model for a new, related task</td></tr>
+  <tr><td>MobileNetV2</td><td>Lightweight CNN backbone pretrained on ImageNet</td></tr>
+  <tr><td>Mel-Spectrogram</td><td>2D image of audio frequencies over time (human-like scale)</td></tr>
+  <tr><td>StandardScaler</td><td>Transforms features to zero mean, unit variance</td></tr>
+  <tr><td>LabelEncoder</td><td>Text categories → integers (0, 1, 2...)</td></tr>
+  <tr><td>OneHotEncoder</td><td>Text categories → binary columns (no order)</td></tr>
+  <tr><td>Pipeline</td><td>Chain of transformers + model as one reusable object</td></tr>
+  <tr><td>Overfitting</td><td>Model memorises training data, fails on new data</td></tr>
+  <tr><td>ReLU</td><td>max(0, x) — kills negatives, enables deep networks</td></tr>
+  <tr><td>Softmax</td><td>Converts raw scores to probabilities summing to 1</td></tr>
+  <tr><td>AUC-ROC</td><td>Area under ROC curve — measures class discrimination ability</td></tr>
+  <tr><td>Flask</td><td>Python web framework to expose ML models as HTTP APIs</td></tr>
+  <tr><td>pickle</td><td>Serialise Python objects (models) to binary files</td></tr>
+</table>
+
+<!-- ═══ PART 9 ═══ -->
+<div class="part-header" style="background: linear-gradient(135deg, #065f46 0%, #1e40af 100%);">
+  <div><span class="part-num">Part 9</span><h2>🔥 Extra Topics — What Examiners Love to Ask</h2></div>
+</div>
+
+<h3>Neural Network Training — How Models Actually Learn</h3>
+<div class="concept-box">
+  <h4>Backpropagation</h4>
+  <p>The algorithm that trains neural networks. After a forward pass produces a wrong prediction, the <b>error is propagated backwards</b> through the network, calculating how much each weight contributed to the error. Weights are then updated using the gradient to reduce the error.</p>
+  <pre>Forward Pass:  Input → Layers → Prediction
+Loss:          Compare prediction with actual label → compute error
+Backward Pass: Calculate gradient of loss with respect to each weight
+Update:        weight = weight − learning_rate × gradient</pre>
+</div>
+
+<div class="concept-box">
+  <h4>Gradient Descent</h4>
+  <p>The optimisation algorithm used to minimise the loss. It moves weights in the direction that reduces the loss the most (negative gradient direction).</p>
+  <table>
+    <tr><th>Variant</th><th>Updates weights using</th><th>Pros/Cons</th></tr>
+    <tr><td>Batch GD</td><td>Entire dataset</td><td>Accurate but slow for large data</td></tr>
+    <tr><td>Stochastic GD (SGD)</td><td>One sample at a time</td><td>Fast, noisy</td></tr>
+    <tr><td><b>Mini-Batch GD</b></td><td>Small batches (e.g. 32)</td><td>Best of both — used in deep learning</td></tr>
+    <tr><td><b>Adam</b></td><td>Adaptive learning rates</td><td>Most popular optimizer, fast convergence</td></tr>
+  </table>
+</div>
+
+<h3>Loss Functions</h3>
+<table>
+  <tr><th>Loss Function</th><th>Used For</th><th>Formula (simplified)</th></tr>
+  <tr><td><b>Binary Cross-Entropy</b></td><td>Binary classification (Churn: 0/1)</td><td>−[y log(p) + (1−y) log(1−p)]</td></tr>
+  <tr><td><b>Categorical Cross-Entropy</b></td><td>Multi-class (Fruit: 36 classes)</td><td>−Σ yᵢ log(pᵢ)</td></tr>
+  <tr><td><b>Mean Squared Error</b></td><td>Regression</td><td>Σ(actual − predicted)² / n</td></tr>
+  <tr><td><b>Log Loss</b></td><td>Probabilistic classifiers</td><td>Same as binary cross-entropy</td></tr>
+</table>
+<blockquote>We used <code>eval_metric='logloss'</code> in XGBoost. In Keras CNNs we used <code>loss='categorical_crossentropy'</code> for multi-class and <code>'binary_crossentropy'</code> for face mask (2-3 classes with sigmoid/softmax).</blockquote>
+
+<h3>Key Training Hyperparameters</h3>
+<table>
+  <tr><th>Term</th><th>What it means</th><th>Typical values</th></tr>
+  <tr><td><b>Epoch</b></td><td>One complete pass through all training data</td><td>10–100</td></tr>
+  <tr><td><b>Batch Size</b></td><td>Number of samples processed before weights update</td><td>16, 32, 64</td></tr>
+  <tr><td><b>Learning Rate</b></td><td>Step size for gradient descent (how fast it learns)</td><td>0.001, 0.0001</td></tr>
+  <tr><td><b>n_estimators</b></td><td>Number of trees in Gradient Boosting / XGBoost</td><td>50–500</td></tr>
+  <tr><td><b>max_depth</b></td><td>How deep each decision tree can grow</td><td>3–10</td></tr>
+  <tr><td><b>Dropout rate</b></td><td>% of neurons randomly switched off during training to prevent overfitting</td><td>0.2–0.5</td></tr>
+</table>
+
+<h3>What is Dropout?</h3>
+<div class="concept-box">
+  <h4>Dropout — Regularisation for Neural Networks</h4>
+  <p>During training, <b>randomly deactivate a fraction of neurons</b> in each forward pass. This forces the network to learn redundant representations and not rely on any single neuron — effectively preventing overfitting.</p>
+  <pre>model.add(Dropout(0.4))  # 40% neurons randomly turned off each step</pre>
+  <p>At test/inference time, Dropout is <b>disabled</b> — all neurons active, but their weights are scaled. We used <code>Dropout(0.4)</code> before the final Dense layer in our CNNs.</p>
+</div>
+
+<h3>What is Data Augmentation?</h3>
+<div class="concept-box">
+  <h4>Used in: Face Mask, Fruit/Veg, Audio models</h4>
+  <p>Artificially increasing training data by applying random transformations to existing images. This helps the model generalise better and reduces overfitting.</p>
+  <pre>ImageDataGenerator(
+    rotation_range=20,       # Rotate up to 20°
+    zoom_range=0.2,          # Random zoom
+    horizontal_flip=True,    # Mirror the image
+    brightness_range=[0.8,1.2]  # Change brightness
+)</pre>
+  <p>This means if we have 1,000 images, the model sees different versions each epoch — effectively sees millions of variants over training.</p>
+</div>
+
+<h3>What is Random State / Random Seed?</h3>
+<p>Setting <code>random_state=42</code> makes results <b>reproducible</b>. ML algorithms involve randomness (random weight init, random train/test split). Fixing the seed ensures the same results every run, making experiments comparable.</p>
+<pre>model = GradientBoostingClassifier(n_estimators=50, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)</pre>
+
+<h3>Class Imbalance Problem</h3>
+<div class="concept-box">
+  <h4>Relevant to: Churn model, Loan approval</h4>
+  <p>If 95% of customers are non-churners, a model that always predicts "Not Churn" gets 95% accuracy — but is completely useless. Solutions:</p>
+  <ul>
+    <li><b>SMOTE</b> (Synthetic Minority Oversampling Technique) — generates synthetic samples for minority class</li>
+    <li><b>class_weight='balanced'</b> — penalises misclassifying minority class more heavily</li>
+    <li><b>Threshold tuning</b> — change classification threshold from 0.5 to 0.3</li>
+    <li><b>Use F1-Score/AUC instead of Accuracy</b> — better metrics for imbalanced data</li>
+  </ul>
+</div>
+
+<h3>What is an API? How does our project use it?</h3>
+<div class="concept-box">
+  <h4>API = Application Programming Interface</h4>
+  <p>A way for two programs to talk to each other. Our Flask routes are <b>REST APIs</b> — the browser (frontend) sends HTTP requests to the server (backend) and gets JSON back.</p>
+  <table>
+    <tr><th>Route</th><th>Method</th><th>What it does</th></tr>
+    <tr><td><code>/api/loan/predict</code></td><td>POST</td><td>Takes form data, returns prediction + probability</td></tr>
+    <tr><td><code>/api/ecommerce/features</code></td><td>GET</td><td>Returns feature names and categories</td></tr>
+    <tr><td><code>/api/audio/predict</code></td><td>POST</td><td>Takes uploaded audio file, returns language</td></tr>
+  </table>
+  <p><b>JSON</b> (JavaScript Object Notation) is the data format: <code>{"prediction": 1, "probability": 0.87}</code></p>
+</div>
+
+<h3>What is a Virtual Environment (venv)?</h3>
+<p>An isolated Python environment that has its own packages — separate from the system Python. This prevents package version conflicts between projects.</p>
+<pre>python -m venv .venv           # Create virtual env
+.venv\Scripts\activate         # Activate (Windows)
+pip install flask scikit-learn  # Install into isolated env
+python -m pip install pandas   # Always use python -m pip to avoid wrong pip</pre>
+<blockquote>We had a bug where <code>pip</code> installed to the global Python but Flask was running in the venv — so the packages couldn't be found. Fixed by using <code>python -m pip install</code> with the exact venv Python path.</blockquote>
+
+<h3>GET vs POST in HTTP</h3>
+<table>
+  <tr><th></th><th>GET</th><th>POST</th></tr>
+  <tr><td>Purpose</td><td>Retrieve/read data</td><td>Send/submit data</td></tr>
+  <tr><td>Data location</td><td>URL query string</td><td>Request body (hidden)</td></tr>
+  <tr><td>Security</td><td>Visible in URL</td><td>Not visible in URL</td></tr>
+  <tr><td>Our use</td><td>Loading feature list</td><td>Sending prediction inputs</td></tr>
+</table>
+
+<h3>Sigmoid vs Softmax Activation</h3>
+<table>
+  <tr><th></th><th>Sigmoid</th><th>Softmax</th></tr>
+  <tr><td>Output range</td><td>0 to 1 (per neuron)</td><td>0 to 1 (probabilities sum to 1)</td></tr>
+  <tr><td>Use case</td><td>Binary classification</td><td>Multi-class classification</td></tr>
+  <tr><td>Formula</td><td>1 / (1 + e⁻ˣ)</td><td>eˣⁱ / Σeˣʲ</td></tr>
+  <tr><td>Our use</td><td>Binary face mask output</td><td>36-class fruit, 10-class audio</td></tr>
+</table>
+
+<h3>Ensemble Methods — The Big Picture</h3>
+<table>
+  <tr><th>Method</th><th>Idea</th><th>Example</th></tr>
+  <tr><td><b>Bagging</b></td><td>Train many models on random subsets (parallel), average outputs</td><td>Random Forest</td></tr>
+  <tr><td><b>Boosting</b></td><td>Train models sequentially, each fixing previous errors</td><td>Gradient Boosting, XGBoost, AdaBoost</td></tr>
+  <tr><td><b>Stacking</b></td><td>Use multiple models' outputs as input to a meta-model</td><td>Stacked Classifier</td></tr>
+</table>
+<blockquote>We used <b>Boosting</b> for both tabular models. Random Forest (Bagging) was not used but is worth knowing since it's frequently asked.</blockquote>
+
+<!-- EXTRA Q&A -->
+<div class="part-header" style="background: linear-gradient(135deg, #7c2d12, #7c3aed);">
+  <div><span class="part-num">Part 10</span><h2>🎯 20 More Probable Viva Questions</h2></div>
+</div>
+
+<div class="qa-card no-break">
+  <div class="qa-q">Q16: What is an epoch vs a batch in deep learning?</div>
+  <div class="qa-a"><b>Epoch:</b> One full pass through the entire training dataset. <b>Batch:</b> A subset of data processed in one forward+backward pass. With 1000 images and batch size 32 → 1 epoch = ~31 batches. Training typically runs for 20–100 epochs.</div>
+</div>
+
+<div class="qa-card no-break">
+  <div class="qa-q">Q17: What is the vanishing gradient problem?</div>
+  <div class="qa-a">In deep networks, gradients shrink exponentially as they propagate backwards through many layers — eventually becoming so tiny that early layers stop learning. ReLU activation solves this: it doesn't saturate like sigmoid/tanh, keeping gradients alive.</div>
+</div>
+
+<div class="qa-card no-break">
+  <div class="qa-q">Q18: Why did you use GradientBoostingClassifier and not Random Forest for churn?</div>
+  <div class="qa-a">Both are ensemble methods but Gradient Boosting typically outperforms Random Forest on structured/tabular e-commerce data because it focuses on hard-to-classify samples. Random Forest trains trees independently (parallel), while Gradient Boosting trains them sequentially (correction-focused), making it more precise.</div>
+</div>
+
+<div class="qa-card no-break">
+  <div class="qa-q">Q19: What is the difference between predict() and predict_proba()?</div>
+  <div class="qa-a"><code>predict()</code> returns the final class label (e.g., 0 or 1). <code>predict_proba()</code> returns the probability for each class (e.g., [0.13, 0.87]). We use <code>predict_proba()[:, 1]</code> to get the probability of the positive class to show confidence %.</div>
+</div>
+
+<div class="qa-card no-break">
+  <div class="qa-q">Q20: What is ImageNet and why is it important in our project?</div>
+  <div class="qa-a">ImageNet is a dataset of 1.4 million labelled images across 1,000 categories. MobileNetV2 was pre-trained on it. This is important because the model already knows how to detect edges, textures, shapes, and objects — we just retrain the final layers for our specific classes.</div>
+</div>
+
+<div class="qa-card no-break">
+  <div class="qa-q">Q21: What is a Confusion Matrix and how do you read it?</div>
+  <div class="qa-a">A table showing actual vs predicted labels. Rows = actual class, columns = predicted class. Diagonal = correct predictions. Off-diagonal = errors. From it we derive: Accuracy, Precision, Recall, F1. For 3-class problems (face mask), it's a 3×3 matrix.</div>
+</div>
+
+<div class="qa-card no-break">
+  <div class="qa-q">Q22: What is the difference between L1 and L2 regularisation?</div>
+  <div class="qa-a"><b>L1 (Lasso):</b> Adds sum of absolute weights to loss — can drive some weights to exactly zero (feature selection). <b>L2 (Ridge):</b> Adds sum of squared weights to loss — keeps all weights small but non-zero. XGBoost uses both (alpha = L1, lambda = L2 in parameters).</div>
+</div>
+
+<div class="qa-card no-break">
+  <div class="qa-q">Q23: Why 224×224 pixel input for MobileNetV2?</div>
+  <div class="qa-a">MobileNetV2 was designed and trained with 224×224 inputs (it was how ImageNet was used). Using the same size lets the pretrained weights work correctly. For our audio spectrogram, we also resize to 224×224 so we can use the same pretrained model without modification.</div>
+</div>
+
+<div class="qa-card no-break">
+  <div class="qa-q">Q24: What is feature importance and how does it apply here?</div>
+  <div class="qa-a">Tree-based models (Gradient Boosting, XGBoost) can rank features by how much each one reduces the loss across all trees. For e-commerce churn, features like SatisfactionScore, Complain, and Tenure would rank highest. <code>model.feature_importances_</code> gives this array.</div>
+</div>
+
+<div class="qa-card no-break">
+  <div class="qa-q">Q25: What is the difference between deep learning and machine learning?</div>
+  <div class="qa-a"><b>ML:</b> Learns from structured/tabular data using algorithms like decision trees. Requires manual feature engineering. <b>Deep Learning:</b> A subfield of ML using multi-layer neural networks that automatically learn hierarchical features from raw data (images, audio, text). Needs more data + compute but achieves state-of-the-art on unstructured data.</div>
+</div>
+
+<div class="qa-card no-break">
+  <div class="qa-q">Q26: What is Dropout and when is it used?</div>
+  <div class="qa-a">A regularisation technique for neural networks. During training, randomly deactivate X% of neurons each step — forcing the network not to rely on any specific neuron. We used <code>Dropout(0.4)</code> in our CNN models. Disabled at inference time (all neurons active, weights compensated).</div>
+</div>
+
+<div class="qa-card no-break">
+  <div class="qa-q">Q27: How does your churn prediction help a business?</div>
+  <div class="qa-a">The model predicts which customers are likely to leave. The business can then: (1) target these customers with discounts/offers before they leave, (2) understand why customers churn (feature importance), (3) calculate customer lifetime value and prioritise high-value at-risk customers.</div>
+</div>
+
+<div class="qa-card no-break">
+  <div class="qa-q">Q28: What is Cross-entropy loss and why is it used for classification?</div>
+  <div class="qa-a">Cross-entropy measures how different the predicted probability distribution is from the actual distribution. Formula: <code>−Σ y_true × log(y_pred)</code>. A perfect prediction (probability 1.0 for correct class) gives loss = 0. Wrong predictions give high loss. It's differentiable and well-behaved for gradient descent.</div>
+</div>
+
+<div class="qa-card no-break">
+  <div class="qa-q">Q29: Explain the concept of a REST API with our project as the example.</div>
+  <div class="qa-a">REST (Representational State Transfer) uses HTTP methods to perform operations. Our Flask routes are REST endpoints. Browser sends <code>POST /api/loan/predict</code> with JSON body → server processes → returns JSON response. Stateless: each request is independent. We use GET for fetching features and POST for predictions.</div>
+</div>
+
+<div class="qa-card no-break">
+  <div class="qa-q">Q30: What would you improve if given more time?</div>
+  <div class="qa-a">1. Train on real Kaggle dataset instead of synthetic data for better generalisation<br>
+  2. Add user authentication and dashboard<br>
+  3. Deploy to cloud (Heroku/AWS) instead of localhost<br>
+  4. Add model performance monitoring and retraining pipeline<br>
+  5. Implement SHAP values for explainable AI — show users which features drove the prediction<br>
+  6. Add database (SQLite/PostgreSQL) to log all predictions</div>
+</div>
+
+<div class="callout callout-green" style="margin-top:2rem; text-align:center;">
+  ✅ <b>Good luck in your viva!</b> Remember: explain the <i>WHY</i> behind each choice, not just the <i>WHAT</i>.
+</div>
+
+</div><!-- end content -->
+
+<!-- PRINT BUTTON -->
+<button class="print-btn" onclick="window.print()">
+  🖨️ Save as PDF
+</button>
+
+</body>
+</html>
